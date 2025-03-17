@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulaire Véhicules</title>
+    <link rel="manifest" href="manifest.json">
+    <script>
+        const GITHUB_TOKEN = "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";
+        const OWNER = "jpgofbdev";
+        const REPO = "vehicules";
+        
+        // Enregistrer le service worker pour le mode hors ligne
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log("Service Worker enregistré !"))
+                .catch(err => console.log("Erreur Service Worker :", err));
+        }
+        
+        async function envoyerDonnees() {
+            const formData = {
+                vehicule: document.getElementById("vehicule").value,
+                date_debut: document.getElementById("date_debut").value,
+                date_fin: document.getElementById("date_fin").value,
+                kilometrage_arrivee: document.getElementById("kilometrage").value,
+                nom: document.getElementById("nom").value,
+                nature_mission: document.getElementById("nature_mission").value,
+                lieu_mission: document.getElementById("lieu_mission").value,
+                signature: document.getElementById("signature").toDataURL()
+            };
+
+            const fileName = `formulaire_${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}.json`;
+            const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/files/${fileName}`;
+
+            const payload = {
+                message: "Ajout d'un formulaire",
+                content: btoa(JSON.stringify(formData, null, 2)),
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: "PUT",
+                    headers: {
+                        "Authorization": `token ${GITHUB_TOKEN}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    alert("Formulaire envoyé avec succès !");
+                    localStorage.removeItem("formData");
+                } else {
+                    throw new Error("Échec de l'envoi, données stockées localement.");
+                }
+            } catch (error) {
+                console.log(error);
+                localStorage.setItem("formData", JSON.stringify(formData));
+            }
+        }
+        
+        window.addEventListener("online", () => {
+            const savedData = localStorage.getItem("formData");
+            if (savedData) {
+                envoyerDonnees();
+            }
+        });
+    </script>
+</head>
+<body>
+    <h2>Formulaire Véhicules</h2>
+    <form onsubmit="event.preventDefault(); envoyerDonnees();">
+        <label for="vehicule">Véhicule :</label>
+        <select id="vehicule">
+            <option>YARIS DW-477-ZW</option>
+            <option>ZOE électrique FD-023-YB</option>
+            <option>MEGANE DJ-977-KH</option>
+            <option>PEUGEOT 208 électrique GZ-850-FS</option>
+            <option>TRAFFIC EY-194-WL</option>
+        </select>
+        <br>
+        
+        <label for="date_debut">Date début :</label>
+        <input type="datetime-local" id="date_debut" required>
+        <br>
+        
+        <label for="date_fin">Date fin :</label>
+        <input type="datetime-local" id="date_fin" required>
+        <br>
+        
+        <label for="kilometrage">Kilométrage arrivée :</label>
+        <input type="number" id="kilometrage" required>
+        <br>
+        
+        <label for="nom">Nom :</label>
+        <input type="text" id="nom" required>
+        <br>
+        
+        <label for="nature_mission">Nature mission :</label>
+        <input type="text" id="nature_mission" required>
+        <br>
+        
+        <label for="lieu_mission">Lieu mission :</label>
+        <input type="text" id="lieu_mission" required>
+        <br>
+        
+        <label>Signature :</label>
+        <canvas id="signature" width="300" height="100" style="border:1px solid #000;"></canvas>
+        <br>
+        
+        <button type="submit">Valider</button>
+    </form>
+</body>
+</html>
