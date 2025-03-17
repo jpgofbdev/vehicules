@@ -7,7 +7,7 @@
 </head>
 <body>
     <h2>Formulaire Véhicules</h2>
-    <form onsubmit="event.preventDefault(); envoyerDonnees();">
+    <form onsubmit="event.preventDefault(); enregistrerDonneesLocalement();">
         <label>Véhicule :</label>
         <select id="vehicule">
             <option value="YARIS DW-477-ZW">YARIS DW-477-ZW</option>
@@ -40,13 +40,10 @@
     </form>
 
     <script>
-        const GITHUB_REPO = "vehicules";
-        const GITHUB_OWNER = "jpgofbdev";
-        const FILE_PATH = "files/";
+        const FILE_PATH = "json/";
         const FILE_EXTENSION = ".json";
-        const GITHUB_TOKEN = "TON_TOKEN_ICI";  // Remplace par un GitHub Secret si possible
 
-        async function envoyerDonnees() {
+        function enregistrerDonneesLocalement() {
             const formData = {
                 vehicule: document.getElementById("vehicule").value,
                 date_debut: document.getElementById("date_debut").value,
@@ -59,58 +56,9 @@
             };
 
             const fileName = `formulaire_${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}${FILE_EXTENSION}`;
-            const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}${fileName}`;
-
-            const payload = {
-                message: "Ajout d'un formulaire",
-                content: btoa(JSON.stringify(formData, null, 2))
-            };
-
-            try {
-                const response = await fetch(apiUrl, {
-                    method: "PUT",
-                    headers: {
-                        "Authorization": `Bearer ${GITHUB_TOKEN}`,
-                        "Accept": "application/vnd.github.v3+json",
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    alert(`✅ Formulaire envoyé avec succès !\nFichier disponible ici : https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/blob/main/${FILE_PATH}${fileName}`);
-                } else {
-                    throw new Error(`Erreur GitHub: ${response.status}`);
-                }
-            } catch (error) {
-                console.error("❌ Échec de l'envoi. Tentative de sauvegarde locale pour réessayer plus tard.", error);
-                sauvegarderPourEnvoiLater(formData, fileName);
-            }
+            localStorage.setItem(`${FILE_PATH}${fileName}`, JSON.stringify(formData));
+            alert("✅ Formulaire enregistré localement. Il sera envoyé automatiquement par GitHub Actions.");
         }
-
-        function sauvegarderPourEnvoiLater(formData, fileName) {
-            let pendingUploads = JSON.parse(localStorage.getItem("pendingUploads") || "[]");
-            pendingUploads.push({ formData, fileName });
-            localStorage.setItem("pendingUploads", JSON.stringify(pendingUploads));
-        }
-
-        async function verifierEtEnvoyerDonneesStockees() {
-            if (navigator.onLine) {
-                let pendingUploads = JSON.parse(localStorage.getItem("pendingUploads") || "[]");
-                for (let data of pendingUploads) {
-                    try {
-                        await envoyerDonnees(data.formData, data.fileName);
-                        pendingUploads = pendingUploads.filter(d => d.fileName !== data.fileName);
-                    } catch (e) {
-                        console.warn("Échec de la tentative d'envoi de", data.fileName);
-                    }
-                }
-                localStorage.setItem("pendingUploads", JSON.stringify(pendingUploads));
-            }
-        }
-
-        setInterval(verifierEtEnvoyerDonneesStockees, 30000);
-        verifierEtEnvoyerDonneesStockees();
     </script>
 </body>
 </html>
