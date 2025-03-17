@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Upload GitHub</title>
+</head>
+<body>
+    <h2>Test Upload de Fichier sur GitHub</h2>
+    <button onclick="envoyerFichier()">Envoyer un fichier test</button>
+
+    <script>
+        const GITHUB_OWNER = "jpgofbdev";
+        const GITHUB_REPO = "vehicules";
+        const FILE_PATH = "files/hello_world.txt";
+
+        async function envoyerFichier() {
+            const fileContent = "Hello, World!";
+            const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
+
+            const payload = {
+                message: "Ajout d'un fichier test",
+                content: btoa(fileContent)
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: "PUT",
+                    headers: {
+                        "Authorization": `Bearer GITHUB_TOKEN_SECRET`,
+                        "Accept": "application/vnd.github.v3+json",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    alert("✅ Fichier envoyé avec succès !");
+                } else {
+                    throw new Error(`Erreur GitHub: ${response.status}`);
+                }
+            } catch (error) {
+                console.error("❌ Échec de l'envoi.", error);
+                alert("❌ Impossible d'envoyer le fichier.");
+            }
+        }
+    </script>
+</body>
+</html>
