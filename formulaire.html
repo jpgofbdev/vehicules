@@ -4,19 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulaire Véhicules</title>
-    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <h2>Formulaire Véhicules</h2>
+    <form onsubmit="event.preventDefault(); envoyerDonnees();">
+        <label>Véhicule :</label>
+        <select id="vehicule">
+            <option value="YARIS DW-477-ZW">YARIS DW-477-ZW</option>
+            <option value="ZOE électrique FD-023-YB">ZOE électrique FD-023-YB</option>
+            <option value="MEGANE DJ-977-KH">MEGANE DJ-977-KH</option>
+        </select><br>
+        
+        <label>Date début :</label>
+        <input type="datetime-local" id="date_debut"><br>
+        
+        <label>Date fin :</label>
+        <input type="datetime-local" id="date_fin"><br>
+        
+        <label>Kilométrage arrivée :</label>
+        <input type="number" id="kilometrage"><br>
+        
+        <label>Nom :</label>
+        <input type="text" id="nom"><br>
+        
+        <label>Nature mission :</label>
+        <input type="text" id="nature_mission"><br>
+        
+        <label>Lieu mission :</label>
+        <input type="text" id="lieu_mission"><br>
+        
+        <label>Signature :</label>
+        <textarea id="signature"></textarea><br>
+        
+        <button type="submit">Valider</button>
+    </form>
+
     <script>
-        const GITHUB_TOKEN = "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";
-        const OWNER = "jpgofbdev";
-        const REPO = "vehicules";
-        
-        // Enregistrer le service worker pour le mode hors ligne
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(() => console.log("Service Worker enregistré !"))
-                .catch(err => console.log("Erreur Service Worker :", err));
-        }
-        
+        const GITHUB_REPO = "vehicules";
+        const GITHUB_OWNER = "jpgofbdev";
+        const FILE_PATH = "files/";
+        const FILE_EXTENSION = ".json";
+        const GITHUB_TOKEN = "TON_TOKEN_ICI";  // Remplace par un GitHub Secret si possible
+
         async function envoyerDonnees() {
             const formData = {
                 vehicule: document.getElementById("vehicule").value,
@@ -26,121 +55,62 @@
                 nom: document.getElementById("nom").value,
                 nature_mission: document.getElementById("nature_mission").value,
                 lieu_mission: document.getElementById("lieu_mission").value,
-                signature: document.getElementById("signature").toDataURL()
+                signature: document.getElementById("signature").value
             };
 
-            const fileName = `formulaire_${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}.json`;
-            const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/files/${fileName}`;
+            const fileName = `formulaire_${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}${FILE_EXTENSION}`;
+            const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}${fileName}`;
 
             const payload = {
                 message: "Ajout d'un formulaire",
-                content: btoa(JSON.stringify(formData, null, 2)),
+                content: btoa(JSON.stringify(formData, null, 2))
             };
 
             try {
-                const response = await fetch(url, {
+                const response = await fetch(apiUrl, {
                     method: "PUT",
                     headers: {
-                        "Authorization": `token ${GITHUB_TOKEN}`,
+                        "Authorization": `Bearer ${GITHUB_TOKEN}`,
+                        "Accept": "application/vnd.github.v3+json",
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify(payload)
                 });
 
                 if (response.ok) {
-                    alert("Formulaire envoyé avec succès !");
-                    localStorage.removeItem("formData");
+                    alert(`✅ Formulaire envoyé avec succès !\nFichier disponible ici : https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/blob/main/${FILE_PATH}${fileName}`);
                 } else {
-                    throw new Error("Échec de l'envoi, données stockées localement.");
+                    throw new Error(`Erreur GitHub: ${response.status}`);
                 }
             } catch (error) {
-                console.log(error);
-                localStorage.setItem("formData", JSON.stringify(formData));
+                console.error("❌ Échec de l'envoi. Tentative de sauvegarde locale pour réessayer plus tard.", error);
+                sauvegarderPourEnvoiLater(formData, fileName);
             }
         }
-        
-        window.addEventListener("online", () => {
-            const savedData = localStorage.getItem("formData");
-            if (savedData) {
-                envoyerDonnees();
+
+        function sauvegarderPourEnvoiLater(formData, fileName) {
+            let pendingUploads = JSON.parse(localStorage.getItem("pendingUploads") || "[]");
+            pendingUploads.push({ formData, fileName });
+            localStorage.setItem("pendingUploads", JSON.stringify(pendingUploads));
+        }
+
+        async function verifierEtEnvoyerDonneesStockees() {
+            if (navigator.onLine) {
+                let pendingUploads = JSON.parse(localStorage.getItem("pendingUploads") || "[]");
+                for (let data of pendingUploads) {
+                    try {
+                        await envoyerDonnees(data.formData, data.fileName);
+                        pendingUploads = pendingUploads.filter(d => d.fileName !== data.fileName);
+                    } catch (e) {
+                        console.warn("Échec de la tentative d'envoi de", data.fileName);
+                    }
+                }
+                localStorage.setItem("pendingUploads", JSON.stringify(pendingUploads));
             }
-        });
-async function enregistrerDonneesLocalement() {
-    const formData = {
-        vehicule: document.getElementById("vehicule").value,
-        date_debut: document.getElementById("date_debut").value,
-        date_fin: document.getElementById("date_fin").value,
-        kilometrage_arrivee: document.getElementById("kilometrage").value,
-        nom: document.getElementById("nom").value,
-        nature_mission: document.getElementById("nature_mission").value,
-        lieu_mission: document.getElementById("lieu_mission").value,
-        signature: document.getElementById("signature").toDataURL()
-    };
+        }
 
-    const fileName = `formulaire_${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}.json`;
-
-    // Stocker localement le JSON
-    const blob = new Blob([JSON.stringify(formData, null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = fileName;
-    a.click();
-
-    // Ajouter dans un dossier JSON pour GitHub Actions
-    localStorage.setItem(`json_${fileName}`, JSON.stringify(formData));
-
-    alert("Formulaire enregistré localement. Il sera envoyé à GitHub dès que possible.");
-}
-
-
-
-
-
-        
+        setInterval(verifierEtEnvoyerDonneesStockees, 30000);
+        verifierEtEnvoyerDonneesStockees();
     </script>
-</head>
-<body>
-    <h2>Formulaire Véhicules</h2>
-    <form onsubmit="event.preventDefault(); enregistrerDonneesLocalement();">
-        <label for="vehicule">Véhicule :</label>
-        <select id="vehicule">
-            <option>YARIS DW-477-ZW</option>
-            <option>ZOE électrique FD-023-YB</option>
-            <option>MEGANE DJ-977-KH</option>
-            <option>PEUGEOT 208 électrique GZ-850-FS</option>
-            <option>TRAFFIC EY-194-WL</option>
-        </select>
-        <br>
-        
-        <label for="date_debut">Date début :</label>
-        <input type="datetime-local" id="date_debut" required>
-        <br>
-        
-        <label for="date_fin">Date fin :</label>
-        <input type="datetime-local" id="date_fin" required>
-        <br>
-        
-        <label for="kilometrage">Kilométrage arrivée :</label>
-        <input type="number" id="kilometrage" required>
-        <br>
-        
-        <label for="nom">Nom :</label>
-        <input type="text" id="nom" required>
-        <br>
-        
-        <label for="nature_mission">Nature mission :</label>
-        <input type="text" id="nature_mission" required>
-        <br>
-        
-        <label for="lieu_mission">Lieu mission :</label>
-        <input type="text" id="lieu_mission" required>
-        <br>
-        
-        <label>Signature :</label>
-        <canvas id="signature" width="300" height="100" style="border:1px solid #000;"></canvas>
-        <br>
-        
-        <button type="submit">Valider</button>
-    </form>
 </body>
 </html>
