@@ -65,11 +65,43 @@
                 envoyerDonnees();
             }
         });
+async function enregistrerDonneesLocalement() {
+    const formData = {
+        vehicule: document.getElementById("vehicule").value,
+        date_debut: document.getElementById("date_debut").value,
+        date_fin: document.getElementById("date_fin").value,
+        kilometrage_arrivee: document.getElementById("kilometrage").value,
+        nom: document.getElementById("nom").value,
+        nature_mission: document.getElementById("nature_mission").value,
+        lieu_mission: document.getElementById("lieu_mission").value,
+        signature: document.getElementById("signature").toDataURL()
+    };
+
+    const fileName = `formulaire_${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}.json`;
+
+    // Stocker localement le JSON
+    const blob = new Blob([JSON.stringify(formData, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName;
+    a.click();
+
+    // Ajouter dans un dossier JSON pour GitHub Actions
+    localStorage.setItem(`json_${fileName}`, JSON.stringify(formData));
+
+    alert("Formulaire enregistré localement. Il sera envoyé à GitHub dès que possible.");
+}
+
+
+
+
+
+        
     </script>
 </head>
 <body>
     <h2>Formulaire Véhicules</h2>
-    <form onsubmit="event.preventDefault(); envoyerDonnees();">
+    <form onsubmit="event.preventDefault(); enregistrerDonneesLocalement();">
         <label for="vehicule">Véhicule :</label>
         <select id="vehicule">
             <option>YARIS DW-477-ZW</option>
