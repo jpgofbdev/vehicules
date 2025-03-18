@@ -1,26 +1,27 @@
-
-name: Ajouter un fichier JSON sur GitHub
+name: Déplacer les fichiers JSON vers files/
 
 on:
-  workflow_dispatch:
   push:
     paths:
-      - "json/*.json"  # Se déclenchera si un fichier JSON est ajouté
+      - "json/*.json"
 
 jobs:
-  upload-json:
+  move-json:
     runs-on: ubuntu-latest
     steps:
-      - name: Récupérer le code
+      - name: Récupérer le dépôt
         uses: actions/checkout@v3
 
-      - name: Ajouter le fichier JSON sur GitHub
+      - name: Déplacer les fichiers JSON vers files/
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           for file in json/*.json; do
+            filename=$(basename "$file")
+            content=$(base64 -w 0 "$file")
+            json="{\"message\": \"Déplacement de $filename\", \"content\": \"$content\"}"
             curl -X PUT -H "Authorization: token $GH_TOKEN" \
                  -H "Accept: application/vnd.github.v3+json" \
-                 -d @<(jq -n --arg content "$(base64 -w 0 < $file)" --arg msg "Ajout fichier JSON" '{message: $msg, content: $content}') \
-                 "https://api.github.com/repos/jpgofbdev/vehicules/contents/files/$(basename $file)"
+                 -d "$json" \
+                 "https://api.github.com/repos/${{ github.repository }}/contents/files/$filename"
           done
