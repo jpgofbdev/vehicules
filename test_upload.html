@@ -29,7 +29,6 @@
                 const response = await fetch(apiUrl, {
                     method: "PUT",
                     headers: {
-                        "Authorization": `Bearer GITHUB_TOKEN_SECRET`,  // GitHub Actions utilisera un token sécurisé
                         "Accept": "application/vnd.github.v3+json",
                         "Content-Type": "application/json"
                     },
@@ -37,7 +36,7 @@
                 });
 
                 if (response.ok) {
-                    document.getElementById("status").innerText = "✅ Fichier envoyé avec succès dans json/. GitHub Actions va le traiter.";
+                    document.getElementById("status").innerText = "✅ Fichier envoyé dans json/.";
                 } else {
                     throw new Error(`Erreur GitHub: ${response.status}`);
                 }
