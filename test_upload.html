@@ -13,7 +13,7 @@
     <script>
         const GITHUB_OWNER = "jpgofbdev";
         const GITHUB_REPO = "vehicules";
-        const FILE_PATH = "json/test_hello_world.json";  // 🔴 Fichier temporaire dans json/
+        const FILE_PATH = "json/test_hello_world.json";  // 🔴 Vérifier que le dossier json/ existe bien dans ton dépôt
         const FILE_CONTENT = { message: "Hello, World!" };
 
         async function envoyerFichierSurGitHub() {
@@ -35,14 +35,17 @@
                     body: JSON.stringify(payload)
                 });
 
+                const responseText = await response.text();
+                console.log("📄 Réponse complète de GitHub :", responseText); // 🔴 Log complet de la réponse API
+
                 if (response.ok) {
-                    document.getElementById("status").innerText = "✅ Fichier envoyé dans json/.";
+                    document.getElementById("status").innerText = "✅ Fichier envoyé avec succès dans json/.";
                 } else {
-                    throw new Error(`Erreur GitHub: ${response.status}`);
+                    throw new Error(`Erreur GitHub: ${response.status} - ${responseText}`);
                 }
             } catch (error) {
                 console.error("❌ Échec de l'envoi.", error);
-                document.getElementById("status").innerText = "❌ Impossible d'envoyer le fichier.";
+                document.getElementById("status").innerText = "❌ Impossible d'envoyer le fichier : " + error.message;
             }
         }
     </script>
