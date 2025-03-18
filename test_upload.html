@@ -7,16 +7,44 @@
 </head>
 <body>
     <h2>Test Upload de Fichier sur GitHub</h2>
-    <button onclick="enregistrerFichierLocalement()">Créer un fichier test</button>
+    <button onclick="envoyerFichierSurGitHub()">Créer et envoyer un fichier test</button>
     <p id="status"></p>
 
     <script>
-        const FILE_PATH = "json/test_hello_world.json";
+        const GITHUB_OWNER = "jpgofbdev";
+        const GITHUB_REPO = "vehicules";
+        const FILE_PATH = "json/test_hello_world.json";  // D'abord dans json/
         const FILE_CONTENT = { message: "Hello, World!" };
 
-        function enregistrerFichierLocalement() {
-            localStorage.setItem(FILE_PATH, JSON.stringify(FILE_CONTENT));
-            document.getElementById("status").innerText = "✅ Fichier enregistré localement. Il sera envoyé automatiquement par GitHub Actions.";
+        async function envoyerFichierSurGitHub() {
+            document.getElementById("status").innerText = "⏳ Envoi du fichier en cours...";
+
+            const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
+            const payload = {
+                message: "Ajout du fichier test_hello_world.json",
+                content: btoa(JSON.stringify(FILE_CONTENT, null, 2))
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: "PUT",
+                    headers: {
+                        "Authorization": `Bearer GITHUB_TOKEN_SECRET`,  // GitHub Actions utilisera un token sécurisé
+                        "Accept": "application/vnd.github.v3+json",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    document.getElementById("status").innerText = "✅ Fichier envoyé avec succès dans json/. GitHub Actions va le traiter.";
+                } else {
+                    throw new Error(`Erreur GitHub: ${response.status}`);
+                }
+            } catch (error) {
+                console.error("❌ Échec de l'envoi.", error);
+                document.getElementById("status").innerText = "❌ Impossible d'envoyer le fichier.";
+            }
         }
     </script>
 </body>
